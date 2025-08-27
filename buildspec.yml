@@ -1,22 +1,38 @@
 version: 0.2
 
+env:
+  variables:
+    ARTIFACT_BUCKET: my-s3-gen-bucket   # 👈 replace with an S3 bucket for artifacts
+
 phases:
   install:
     runtime-versions:
       python: 3.9
+    commands:
+      - echo "Installing AWS CLI and dependencies..."
+      - pip install --upgrade awscli
   pre_build:
     commands:
-      - echo Installing dependencies...
+      - echo "Installing Lambda dependencies..."
       - pip install -r lambda/requirements.txt -t lambda/
   build:
     commands:
-      - echo Packaging Lambda function...
+      - echo "Zipping Lambda function..."
       - cd lambda
       - zip -r ../lambda.zip .
       - cd ..
+
+      - echo "Uploading Lambda package to S3..."
+      - aws s3 cp lambda.zip s3://$ARTIFACT_BUCKET/lambda.zip
+
+      - echo "Packaging CloudFormation templates..."
+      - aws cloudformation package \
+          --template-file cloudformation/main.yml \
+          --s3-bucket $ARTIFACT_BUCKET \
+          --output-template-file cloudformation/packaged-main.yml
   post_build:
     commands:
-      - echo Build completed.
+      - echo "Build completed. Packaged template is ready."
 artifacts:
   files:
-    - lambda.zip
+    - cloudformation/packaged-main.yml
