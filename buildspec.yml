@@ -36,5 +36,4 @@ phases:
 artifacts:
   files:
     - cloudformation/packaged-main.yml   # 👈 must be exported
-    - lambda.zip                         # optional: keep if you want to see the zip too
-  name: BuildArtifact
+    - '**/*'
