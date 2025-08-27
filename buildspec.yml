@@ -9,39 +9,47 @@ phases:
     runtime-versions:
       python: 3.9
     commands:
-      - echo "Installing AWS CLI and dependencies..."
+      - echo "Installing dependencies..."
       - pip install --upgrade awscli
-      
+
   pre_build:
     commands:
-      - echo "Installing Lambda dependencies..."
-      - pip install -r lambda/requirements.txt -t lambda/
-      
+      - echo "Validating CloudFormation templates..."
+      - aws cloudformation validate-template --template-body file://cloudformation/main.yml
+      - aws cloudformation validate-template --template-body file://cloudformation/roles.yml
+      - aws cloudformation validate-template --template-body file://cloudformation/lambda-deploy.yml || echo "lambda-deploy.yml not required"
+
   build:
     commands:
-      - echo "Zipping Lambda function..."
+      - echo "Packaging Lambda function..."
       - cd lambda
-      - zip -r ../lambda.zip .
+      - zip -r ../lambda_package.zip .
       - cd ..
-
-      - echo "Uploading Lambda package to S3..."
-      - aws s3 cp lambda.zip s3://$ARTIFACT_BUCKET/lambda.zip
-
-      - echo "Packaging CloudFormation templates..."
+      - echo "Deploying CloudFormation stack..."
       - aws cloudformation package \
-          --template-file cloudformation/main.yml \
+          --template-file cloudformation/lambda-deploy.yml \
           --s3-bucket $ARTIFACT_BUCKET \
-          --output-template-file cloudformation/packaged-main.yml
-          
-      - echo "Verifying packaged template exists..."
-      - ls -la cloudformation/
-      
+          --output-template-file cloudformation/lambda-deploy-packaged.yml
+      - aws cloudformation deploy \
+          --template-file cloudformation/main.yml \
+          --stack-name MyApp-Main \
+          --capabilities CAPABILITY_NAMED_IAM
+      - aws cloudformation deploy \
+          --template-file cloudformation/roles.yml \
+          --stack-name MyApp-Roles \
+          --capabilities CAPABILITY_NAMED_IAM
+      - if [ -f cloudformation/lambda-deploy.yml ]; then \
+            aws cloudformation deploy \
+              --template-file cloudformation/lambda-deploy-packaged.yml \
+              --stack-name MyApp-Lambda \
+              --capabilities CAPABILITY_NAMED_IAM; \
+        fi
+
   post_build:
     commands:
-      - echo "Build completed. Packaged template is ready."
-      
+      - echo "Build and deployment complete."
+
 artifacts:
   files:
-    - cloudformation/packaged-main.yml
-    - lambda.zip
-    - '**/*'
+    - lambda_package.zip
+    - cloudformation/*.yml
