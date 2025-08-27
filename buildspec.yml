@@ -35,4 +35,6 @@ phases:
       - echo "Build completed. Packaged template is ready."
 artifacts:
   files:
-    - lambda.zip
+    - cloudformation/packaged-main.yml   # 👈 must be exported
+    - lambda.zip                         # optional: keep if you want to see the zip too
+  name: BuildArtifact
