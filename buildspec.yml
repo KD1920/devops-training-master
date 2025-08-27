@@ -11,10 +11,12 @@ phases:
     commands:
       - echo "Installing AWS CLI and dependencies..."
       - pip install --upgrade awscli
+      
   pre_build:
     commands:
       - echo "Installing Lambda dependencies..."
       - pip install -r lambda/requirements.txt -t lambda/
+      
   build:
     commands:
       - echo "Zipping Lambda function..."
@@ -30,10 +32,16 @@ phases:
           --template-file cloudformation/main.yml \
           --s3-bucket $ARTIFACT_BUCKET \
           --output-template-file cloudformation/packaged-main.yml
+          
+      - echo "Verifying packaged template exists..."
+      - ls -la cloudformation/
+      
   post_build:
     commands:
       - echo "Build completed. Packaged template is ready."
+      
 artifacts:
   files:
-    - cloudformation/packaged-main.yml   # 👈 must be exported
+    - cloudformation/packaged-main.yml
+    - lambda.zip
     - '**/*'
