@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    ARTIFACT_BUCKET: my-s3-gen-bucket   # 👈 replace with an S3 bucket for artifacts
+    ARTIFACT_BUCKET: my-s3-gen-bucket
 
 phases:
   install:
@@ -36,3 +36,4 @@ phases:
 artifacts:
   files:
     - cloudformation/packaged-main.yml
+  name: BuildArtifact
