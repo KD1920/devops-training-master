@@ -47,5 +47,5 @@ Resources:
                   - lambda:*
                   - ec2:*
                   - logs:*
-                  - iam:PassRole
+                  - iam:*
                 Resource: "*"
